@@ -1,16 +1,22 @@
-
 let songs = [];
 let selected = [];
 let currentSection = "Todas";
 
-async function loadSongs(){
+// ============================
+// CARGAR CANCIONES
+// ============================
+async function loadSongs() {
   const r = await fetch("songs.json");
   songs = await r.json();
   renderSections();
   renderSongs();
 }
+loadSongs();
 
-function renderSections(){
+// ============================
+// SECCIONES
+// ============================
+function renderSections() {
   const c = document.getElementById("sections");
   c.innerHTML = "";
 
@@ -21,7 +27,7 @@ function renderSections(){
     const d = document.createElement("div");
     d.textContent = sec;
 
-    if(sec === currentSection){
+    if (sec === currentSection) {
       d.classList.add("active");
     }
 
@@ -35,63 +41,70 @@ function renderSections(){
   });
 }
 
-function renderSongs(){
+// ============================
+// LISTA DE CANCIONES
+// ============================
+function renderSongs() {
   const c = document.getElementById("songs");
   c.innerHTML = "";
   const search = (document.getElementById("search").value || "").toLowerCase();
 
   songs
-  .filter(x =>
-    (currentSection==="Todas" || x.section===currentSection) &&
-    x.title.toLowerCase().includes(search)
-  )
-  .sort((a,b) => a.title.localeCompare(b.title))
-  .forEach(s => {
+    .filter(x =>
+      (currentSection === "Todas" || x.section === currentSection) &&
+      x.title.toLowerCase().includes(search)
+    )
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .forEach(s => {
 
-    const row = document.createElement("div");
-    row.textContent = s.title;
+      const row = document.createElement("div");
+      row.className = "song-row";
+      row.textContent = s.title;
 
-    const btn = document.createElement("button");
-    btn.textContent = "Añadir";
-    btn.className = "song-btn";
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      if(!selected.find(x => x.id === s.id)){
-        selected.push(s);
-        renderSelected();
-      }
-    };
+      const btn = document.createElement("button");
+      btn.textContent = "Añadir";
+      btn.className = "song-btn";
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        if (!selected.find(x => x.id === s.id)) {
+          selected.push(s);
+          renderSelected();
+        }
+      };
 
-    row.appendChild(btn);
-    row.onclick = () => openSong(s);
-    c.appendChild(row);
-  });
+      row.appendChild(btn);
+      row.onclick = () => openSong(s);
+      c.appendChild(row);
+    });
 }
 
-function renderSelected(){
+// ============================
+// SELECCIONADAS
+// ============================
+function renderSelected() {
   const c = document.getElementById("selectedList");
   c.innerHTML = "";
 
-  selected.forEach((s,i)=>{
+  selected.forEach((s, i) => {
     const row = document.createElement("div");
-    row.className="selected-item";
+    row.className = "selected-item";
 
     const title = document.createElement("div");
     title.textContent = s.title;
 
     const actions = document.createElement("div");
-    actions.className="action-buttons";
+    actions.className = "action-buttons";
 
     const eye = document.createElement("button");
-    eye.className="eye-btn";
-    eye.textContent="👁";
-    eye.onclick=()=>openSong(s);
+    eye.className = "eye-btn";
+    eye.textContent = "👁";
+    eye.onclick = () => openSong(s);
 
     const remove = document.createElement("button");
-    remove.className="remove-btn";
-    remove.textContent="X";
-    remove.onclick=()=>{
-      selected.splice(i,1);
+    remove.className = "remove-btn";
+    remove.textContent = "X";
+    remove.onclick = () => {
+      selected.splice(i, 1);
       renderSelected();
     };
 
@@ -103,80 +116,94 @@ function renderSelected(){
   });
 }
 
-function openSong(song){
+// ============================
+// VISOR DE CANCIÓN
+// ============================
+function openSong(song) {
   document.getElementById("songTitle").textContent = song.title;
-  document.getElementById("songSection").textContent = "Sección: " + song.section;
-  document.getElementById("songBody").innerHTML =
-    '<img src="'+song.image+'" class="song-image">';
+  document.getElementById("songSection").textContent = song.section;
+
+  const body = document.getElementById("songBody");
+  body.innerHTML = "";
+
+  const img = document.createElement("img");
+  img.src = song.image;
+  img.style.width = "100%";
+
+  body.appendChild(img);
   document.getElementById("songDialog").showModal();
 }
 
-/* PDF MULTIPÁGINA + FECHA + PARROQUIA */
-document.getElementById("downloadBtn").addEventListener("click", async () => {
+document.getElementById("closeBtn").onclick = () => {
+  document.getElementById("songDialog").close();
+};
 
+// ============================
+// BUSCADOR
+// ============================
+document.getElementById("search").addEventListener("input", renderSongs);
+
+// ============================
+// DESCARGAR PDF (si ya lo usabas)
+// ============================
+document.getElementById("downloadBtn").addEventListener("click", () => {
   if (selected.length === 0) {
-    alert("No hay canciones seleccionadas");
+    alert("Selecciona al menos una canción");
     return;
   }
 
   const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
 
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4"
+  selected.forEach((s, i) => {
+    if (i > 0) pdf.addPage();
+    pdf.text(s.title, 10, 10);
+    pdf.addImage(s.image, "PNG", 10, 20, 180, 250);
   });
 
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 15;
-  const today = new Date().toLocaleDateString("es-ES");
+  pdf.save("Cancionero-Misa.pdf");
+});
 
-  for (let i = 0; i < selected.length; i++) {
+// ============================
+// DESCARGAR PPT AUTOMÁTICO
+// ============================
+document.getElementById("downloadPPTBtn").addEventListener("click", downloadPPT);
 
-    if (i > 0) pdf.addPage();
-
-    // Encabezado
-    pdf.setFontSize(16);
-    pdf.text("Parroquia Santa Vicenta y Corazón de Jesús", pageWidth / 2, 15, { align: "center" });
-
-    pdf.setFontSize(11);
-    pdf.text("Fecha: " + today, pageWidth / 2, 22, { align: "center" });
-
-    pdf.setFontSize(13);
-    pdf.text(selected[i].section + " - " + selected[i].title, margin, 35);
-
-    const img = new Image();
-    img.src = selected[i].image;
-
-    await new Promise(resolve => img.onload = resolve);
-
-    const usableWidth = pageWidth - margin * 2;
-    const usableHeight = pageHeight - 55;
-
-    const imgRatio = img.width / img.height;
-
-    let finalWidth = usableWidth;
-    let finalHeight = finalWidth / imgRatio;
-
-    // Si se pasa en altura, ajustamos por altura
-    if (finalHeight > usableHeight) {
-      finalHeight = usableHeight;
-      finalWidth = finalHeight * imgRatio;
-    }
-
-    const x = (pageWidth - finalWidth) / 2;
-    const y = 45;
-
-    pdf.addImage(img, 'PNG', x, y, finalWidth, finalHeight);
+function downloadPPT() {
+  if (selected.length === 0) {
+    alert("Selecciona al menos una canción");
+    return;
   }
 
-  pdf.save("Programa-de-Misa.pdf");
-});
+  const pptx = new PptxGenJS();
 
-document.getElementById("search").addEventListener("input", renderSongs);
-document.getElementById("closeBtn").addEventListener("click", ()=>{
-  document.getElementById("songDialog").close();
-});
+  pptx.defineSlideMaster({
+    title: "MASTER",
+    background: { fill: "000000" }
+  });
 
-loadSongs();
+  selected.forEach(song => {
+    const slide = pptx.addSlide("MASTER");
+
+    slide.addText(song.title, {
+      x: 0.5,
+      y: 0.4,
+      w: "90%",
+      h: 1,
+      fontSize: 28,
+      bold: true,
+      color: "FFFFFF",
+      align: "center"
+    });
+
+    slide.addImage({
+      path: song.image,
+      x: 0.5,
+      y: 1.6,
+      w: "90%",
+      h: 4.5
+    });
+  });
+
+  pptx.writeFile("Cancionero-Misa.pptx");
+}
