@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Cancionero</title>
+
+<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<header class="hero">
+  <h1>Mi Cancionero</h1>
+  <p>Organizador de canciones para la misa</p>
+  <input id="search" type="search" placeholder="Buscar canción...">
+</header>
+
+<main class="layout">
+  <aside class="sidebar">
+    <h2>Secciones</h2>
+    <div id="sections"></div>
+
+    <h2 style="margin-top:30px;">Seleccionadas</h2>
+    <div id="selectedList"></div>
+
+    <button id="downloadBtn" class="download-btn">📄 Descargar PDF</button>
+  </aside>
+
+  <section class="content">
+    <h2>Canciones</h2>
+    <div id="songs"></div>
+  </section>
+</main>
+
+<dialog id="songDialog">
+  <div class="dialog-header">
+    <div>
+      <h3 id="songTitle"></h3>
+      <small id="songSection"></small>
+    </div>
+    <button id="closeBtn">Cerrar</button>
+  </div>
+  <div id="songBody"></div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
