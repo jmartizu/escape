@@ -20,23 +20,18 @@ function renderSections() {
   const c = document.getElementById("sections");
   c.innerHTML = "";
 
-  const categoriasExistentes = [...new Set(songs.map(x => x.section))];
-  const seccionesFinales = ["Todas", ...categoriasExistentes];
+  const categorias = [...new Set(songs.map(s => s.section))];
+  const final = ["Todas", ...categorias];
 
-  seccionesFinales.forEach(sec => {
+  final.forEach(sec => {
     const d = document.createElement("div");
     d.textContent = sec;
-
-    if (sec === currentSection) {
-      d.classList.add("active");
-    }
-
+    if (sec === currentSection) d.classList.add("active");
     d.onclick = () => {
       currentSection = sec;
       renderSections();
       renderSongs();
     };
-
     c.appendChild(d);
   });
 }
@@ -50,13 +45,12 @@ function renderSongs() {
   const search = (document.getElementById("search").value || "").toLowerCase();
 
   songs
-    .filter(x =>
-      (currentSection === "Todas" || x.section === currentSection) &&
-      x.title.toLowerCase().includes(search)
+    .filter(s =>
+      (currentSection === "Todas" || s.section === currentSection) &&
+      s.title.toLowerCase().includes(search)
     )
     .sort((a, b) => a.title.localeCompare(b.title))
     .forEach(s => {
-
       const row = document.createElement("div");
       row.className = "song-row";
       row.textContent = s.title;
@@ -64,7 +58,7 @@ function renderSongs() {
       const btn = document.createElement("button");
       btn.textContent = "Añadir";
       btn.className = "song-btn";
-      btn.onclick = (e) => {
+      btn.onclick = e => {
         e.stopPropagation();
         if (!selected.find(x => x.id === s.id)) {
           selected.push(s);
@@ -96,12 +90,10 @@ function renderSelected() {
     actions.className = "action-buttons";
 
     const eye = document.createElement("button");
-    eye.className = "eye-btn";
     eye.textContent = "👁";
     eye.onclick = () => openSong(s);
 
     const remove = document.createElement("button");
-    remove.className = "remove-btn";
     remove.textContent = "X";
     remove.onclick = () => {
       selected.splice(i, 1);
@@ -117,7 +109,7 @@ function renderSelected() {
 }
 
 // ============================
-// VISOR DE CANCIÓN
+// VISOR
 // ============================
 function openSong(song) {
   document.getElementById("songTitle").textContent = song.title;
@@ -129,47 +121,24 @@ function openSong(song) {
   const img = document.createElement("img");
   img.src = song.image;
   img.style.width = "100%";
-
   body.appendChild(img);
+
   document.getElementById("songDialog").showModal();
 }
 
-document.getElementById("closeBtn").onclick = () => {
+document.getElementById("closeBtn").onclick = () =>
   document.getElementById("songDialog").close();
-};
 
-// ============================
-// BUSCADOR
-// ============================
 document.getElementById("search").addEventListener("input", renderSongs);
 
 // ============================
-// DESCARGAR PDF (si ya lo usabas)
+// DESCARGAR PPT CON DIVISIÓN
 // ============================
-document.getElementById("downloadBtn").addEventListener("click", () => {
-  if (selected.length === 0) {
-    alert("Selecciona al menos una canción");
-    return;
-  }
+document
+  .getElementById("downloadPPTBtn")
+  .addEventListener("click", downloadPPT);
 
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
-
-  selected.forEach((s, i) => {
-    if (i > 0) pdf.addPage();
-    pdf.text(s.title, 10, 10);
-    pdf.addImage(s.image, "PNG", 10, 20, 180, 250);
-  });
-
-  pdf.save("Cancionero-Misa.pdf");
-});
-
-// ============================
-// DESCARGAR PPT AUTOMÁTICO
-// ============================
-document.getElementById("downloadPPTBtn").addEventListener("click", downloadPPT);
-
-function downloadPPT() {
+async function downloadPPT() {
   if (selected.length === 0) {
     alert("Selecciona al menos una canción");
     return;
@@ -182,28 +151,56 @@ function downloadPPT() {
     background: { fill: "000000" }
   });
 
-  selected.forEach(song => {
-    const slide = pptx.addSlide("MASTER");
-
-    slide.addText(song.title, {
-      x: 0.5,
-      y: 0.4,
-      w: "90%",
-      h: 1,
-      fontSize: 28,
-      bold: true,
-      color: "FFFFFF",
-      align: "center"
-    });
-
-    slide.addImage({
-      path: song.image,
-      x: 0.5,
-      y: 1.6,
-      w: "90%",
-      h: 4.5
-    });
-  });
+  for (const song of selected) {
+    await addSongSlides(pptx, song);
+  }
 
   pptx.writeFile("Cancionero-Misa.pptx");
+}
+
+// ============================
+// CREA SLIDES SEGÚN ALTURA
+// ============================
+function addSongSlides(pptx, song) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.src = song.image;
+
+    img.onload = () => {
+      const h = img.height;
+      let parts = 1;
+
+      if (h > 2000) parts = 3;
+      else if (h > 1200) parts = 2;
+
+      for (let i = 0; i < parts; i++) {
+        const slide = pptx.addSlide("MASTER");
+
+        slide.addText(song.title, {
+          x: 0.5,
+          y: 0.3,
+          w: "90%",
+          fontSize: 26,
+          bold: true,
+          color: "FFFFFF",
+          align: "center"
+        });
+
+        slide.addImage({
+          path: song.image,
+          x: 0.5,
+          y: 1.3,
+          w: "90%",
+          h: 4.8,
+          sizing: {
+            type: "crop",
+            y: (img.height / parts) * i,
+            h: img.height / parts
+          }
+        });
+      }
+
+      resolve();
+    };
+  });
 }
