@@ -1,107 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Cancionero – PDF / PPT</title>
-  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-  <style>
-    body { font-family: Arial; background:#f4f4f4; padding:20px; }
-    h1 { text-align:center; }
-    .song { background:#fff; padding:8px; margin:5px 0; border-radius:6px; }
-    .actions { margin:20px 0; text-align:center; }
-    button { padding:10px 18px; font-size:15px; background:#000; color:#fff; border:none; border-radius:6px; }
-    .form { background:#fff; padding:15px; border-radius:6px; margin-bottom:20px; }
-    input, select { width:100%; margin-bottom:8px; padding:6px; }
-    textarea { width:100%; height:120px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Cancionero</title>
+
+<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-<h1>🎶 Cancionero – Misa</h1>
+<header class="hero">
+  <h1>Mi Cancionero</h1>
+  <p>Organizador de canciones para la misa</p>
+  <input id="search" type="search" placeholder="Buscar canción...">
+</header>
 
-<div class="form">
-  <h3>➕ Añadir canción</h3>
-  <input id="title" placeholder="Título">
-  <select id="section">
-    <option>Entrada</option>
-    <option>Salmo</option>
-    <option>Aleluya</option>
-    <option>Ofertorio</option>
-    <option>Comunión</option>
-    <option>Salida</option>
-  </select>
-  <input id="image" placeholder="songs/nombre.png">
-  <button onclick="addSong()">Añadir</button>
-</div>
+<main class="layout">
+  <aside class="sidebar">
+    <h2>Secciones</h2>
+    <div id="sections"></div>
 
-<div id="songList"></div>
+    <h2 style="margin-top:30px;">Seleccionadas</h2>
+    <div id="selectedList"></div>
 
-<div class="actions">
-  <button onclick="downloadPPT()">📽️ Descargar PPT</button>
-</div>
+    <button id="downloadBtn" class="download-btn">📄 Descargar PDF</button>
+  </aside>
 
-<h3>📋 JSON generado (copiar y pegar en songs.json)</h3>
-<textarea id="jsonOutput"></textarea>
+  <section class="content">
+    <h2>Canciones</h2>
+    <div id="songs"></div>
+  </section>
+</main>
 
-<script>
-let songs = [];
-let selected = [];
+<dialog id="songDialog">
+  <div class="dialog-header">
+    <div>
+      <h3 id="songTitle"></h3>
+      <small id="songSection"></small>
+    </div>
+    <button id="closeBtn">Cerrar</button>
+  </div>
+  <div id="songBody"></div>
+</dialog>
 
-fetch("./songs.json")
-  .then(res => res.json())
-  .then(data => {
-    songs = data;
-    render();
-  });
-
-function render() {
-  const list = document.getElementById("songList");
-  list.innerHTML = "";
-  songs.forEach(song => {
-    const div = document.createElement("div");
-    div.className = "song";
-    div.innerHTML = `
-      <input type="checkbox" onchange="toggle('${song.id}', this.checked)">
-      <strong>${song.title}</strong> (${song.section})
-    `;
-    list.appendChild(div);
-  });
-  document.getElementById("jsonOutput").value = JSON.stringify(songs, null, 2);
-}
-
-function toggle(id, on) {
-  const song = songs.find(s => s.id === id);
-  if (on) selected.push(song);
-  else selected = selected.filter(s => s.id !== id);
-}
-
-function addSong() {
-  const title = titleInput.value.trim();
-  const section = sectionSelect.value;
-  const image = imageInput.value.trim();
-
-  if (!title || !image) return alert("Faltan datos");
-
-  const id = title.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-");
-
-  songs.push({ id, title, section, image: "./" + image });
-  render();
-}
-
-async function downloadPPT() {
-  if (!selected.length) return alert("Selecciona canciones");
-
-  const pptx = new PptxGenJS();
-  for (const song of selected) {
-    const slide = pptx.addSlide();
-    slide.background = { fill: "000000" };
-    slide.addImage({ path: song.image, x:0, y:0, w:10, h:5.63 });
-  }
-  pptx.writeFile("misa.pptx");
-}
-</script>
-
+<script src="app.js"></script>
 </body>
-</html
+</html>
